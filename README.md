@@ -15,3 +15,12 @@ Chaque configuration existe en clavier AZERTY (France) et QWERTY (US).
 4. Toucher une étape de la liste pour afficher son code seul.
 
 Fichier unique, sans dépendance (seule la police IBM Plex est chargée depuis Google Fonts).
+
+## Fiches PDF (à imprimer à 100 %)
+
+| Fichier | Scanner | Résultat |
+|---|---|---|
+| `pdf/Preview_V2_Sunmi_Blink.pdf` | Sunmi Blink | `\|TEST1400G\|` |
+| `pdf/Preview_V3_Sunmi_Blink.pdf` | Sunmi Blink | `TEST1400G$\|` |
+| `pdf/Honeywell_Voyager1400g_prefixe_suffixe_pipe.pdf` | Voyager 1400g | `\|TEST1400G\|` |
+| `pdf/Honeywell_Voyager1400g_suffixe_dollar_pipe.pdf` | Voyager 1400g | `TEST1400$\|` |
