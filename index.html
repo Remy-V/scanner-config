@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Scanner Config Player</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout : écran de réglage (thème clair/sombre) → lecteur plein écran toujours blanc (contraste scanner). */
+:root {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --fg: #16181d;
+  --muted: #5d6470;
+  --line: #d9dde3;
+  --accent: #0a5cad;
+  --accent-ink: #ffffff;
+  --sel: #e6eef8;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  /* le lecteur reste blanc quel que soit le thème */
+  --stage-bg: #ffffff;
+  --stage-fg: #16181d;
+  --stage-muted: #6b7280;
+  --stage-track: #e3e7ee;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111317; --panel: #1a1d23; --fg: #e8eaee; --muted: #9aa2ae; --line: #2c313a;
+    --accent: #5aa2ec; --accent-ink: #0b1220; --sel: #1d2b3c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111317; --panel: #1a1d23; --fg: #e8eaee; --muted: #9aa2ae; --line: #2c313a;
+  --accent: #5aa2ec; --accent-ink: #0b1220; --sel: #1d2b3c; color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+h1 { font-size: 1.6rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 14px; }
+.label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label {
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; min-width: 0;
+}
+.seg label b { font-weight: 600; }
+.seg label span { color: var(--muted); font-size: 0.85rem; font-family: var(--font-mono); }
+.seg input:checked + label { border-color: var(--accent); background: var(--sel); box-shadow: inset 0 0 0 1px var(--accent); }
+.seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: grid; gap: 6px; }
+.row .top { display: flex; justify-content: space-between; gap: 12px; }
+.row output { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.check { display: flex; gap: 10px; align-items: center; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.go {
+  appearance: none; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink);
+  font: 600 1.05rem var(--font-ui); padding: 14px 18px; cursor: pointer; width: 100%;
+}
+.go:focus-visible, .ctl:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; }
+.steps li { border-top: 1px solid var(--line); min-width: 0; }
+.steps button {
+  appearance: none; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  display: grid; grid-template-columns: 3.2em 1fr auto auto; gap: 10px; align-items: baseline;
+  width: 100%; padding: 8px 6px; border-radius: 6px; min-width: 0;
+}
+.steps button:hover { background: var(--sel); }
+.steps button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.steps .go-ico { color: var(--accent); font-size: 0.85rem; }
+.hintline { color: var(--muted); font-size: 0.85rem; margin: -6px 0 0; }
+.steps li:first-child { border-top: 0; }
+.steps .n { font-weight: 600; font-variant-numeric: tabular-nums; }
+.steps .c { font-family: var(--font-mono); color: var(--muted); font-size: 0.85rem; }
+.steps li.sub .t { color: var(--muted); }
+.tips { margin: 0; padding-left: 1.2em; color: var(--muted); display: grid; gap: 4px; }
+
+/* ---------- Lecteur ---------- */
+.stage {
+  position: fixed; inset: 0; z-index: 20; background: var(--stage-bg); color: var(--stage-fg);
+  display: grid; grid-template-rows: auto 1fr auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 14px) max(16px, env(safe-area-inset-left, 0px));
+  color-scheme: light;
+}
+.s-head { display: grid; gap: 8px; }
+.s-head .line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.s-head .name { font-weight: 600; font-size: 1rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s-head .count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: #0a5cad; font-weight: 500; }
+.track { height: 5px; background: var(--stage-track); border-radius: 3px; overflow: hidden; }
+.track i { display: block; height: 100%; width: 0; background: #0a5cad; transition: width .3s; }
+.s-main { display: grid; place-items: center; align-content: center; gap: 18px; text-align: center; min-height: 0; }
+.s-num { font-size: clamp(2.6rem, 11vw, 5rem); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.s-lbl { font-size: clamp(1.05rem, 4.2vw, 1.5rem); max-width: 30ch; text-wrap: balance; }
+.s-next { color: var(--stage-muted); font-size: 1rem; }
+.s-next b { display: block; font-size: clamp(1.3rem, 5vw, 1.8rem); color: var(--stage-muted); margin-top: 6px; }
+canvas.bc { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+.s-hint { color: var(--stage-muted); font-size: 0.95rem; min-height: 1.4em; }
+.s-count { font-size: clamp(5rem, 30vw, 10rem); font-weight: 700; color: #0a5cad; line-height: 1; }
+.s-ctl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ctl {
+  appearance: none; border: 1px solid #cfd5dd; background: #f6f7f9; color: var(--stage-fg); border-radius: 10px;
+  font: 500 0.95rem var(--font-ui); padding: 12px 6px; cursor: pointer; min-width: 0;
+}
+.ctl.primary { background: #0a5cad; border-color: #0a5cad; color: #fff; }
+.tap { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .track i { transition: none; } }
+</style>
+
+<div class="wrap" id="setup">
+  <header>
+    <h1>Scanner Config Player</h1>
+    <p class="lede">Fait défiler les codes de programmation un par un sur l'écran du téléphone, avec un écran blanc entre chaque code pour que le scanner lise bien les codes répétés.</p>
+  </header>
+
+  <section class="card" aria-labelledby="l-cfg">
+    <div class="label" id="l-scan">Scanner</div>
+    <div class="seg" role="radiogroup" aria-labelledby="l-scan">
+      <input type="radio" name="scan" id="scan-sunmi" value="sunmi" checked><label for="scan-sunmi"><b>Sunmi</b><span>Blink</span></label>
+      <input type="radio" name="scan" id="scan-honeywell" value="honeywell"><label for="scan-honeywell"><b>Honeywell</b><span>Voyager 1400g</span></label>
+    </div>
+    <div class="label" id="l-cfg">Configuration</div>
+    <div class="seg" role="radiogroup" aria-labelledby="l-cfg" id="cfgSeg"></div>
+    <div class="label" id="l-kb">Clavier du poste</div>
+    <div class="seg" role="radiogroup" aria-labelledby="l-kb">
+      <input type="radio" name="kb" id="kb-AZERTY" value="AZERTY" checked><label for="kb-AZERTY"><b>AZERTY</b><span>France</span></label>
+      <input type="radio" name="kb" id="kb-QWERTY" value="QWERTY"><label for="kb-QWERTY"><b>QWERTY</b><span>US</span></label>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="l-time">
+    <div class="label" id="l-time">Rythme</div>
+    <div class="row">
+      <div class="top"><label for="show">Affichage de chaque code</label><output id="showOut" for="show"></output></div>
+      <input type="range" id="show" min="0.5" max="2" step="0.5" value="0.5">
+    </div>
+    <div class="row">
+      <div class="top"><label for="blank">Écran blanc entre deux codes</label><output id="blankOut" for="blank"></output></div>
+      <input type="range" id="blank" min="0.3" max="3" step="0.1" value="0.5">
+    </div>
+    <label class="check" for="auto"><input type="checkbox" id="auto" checked> Défilement automatique (sinon : toucher l'écran pour passer au code suivant)</label>
+    <button class="go" id="start" type="button">Démarrer</button>
+  </section>
+
+  <section class="card" aria-labelledby="l-seq">
+    <div class="label" id="l-seq">Séquence · <span id="seqMeta"></span></div>
+    <p class="hintline">Toucher une étape pour afficher son code seul.</p>
+    <ol class="steps" id="list"></ol>
+  </section>
+
+  <section class="card" aria-labelledby="l-tips">
+    <div class="label" id="l-tips">Avant de lancer</div>
+    <ul class="tips">
+      <li>Luminosité de l'écran au maximum, mode sombre et filtre de lumière bleue coupés.</li>
+      <li id="tipHold"></li>
+      <li>Compter les bips : un par code. S'il en manque un, toucher « Recommencer » : l'étape 1 remet le scanner à zéro.</li>
+    </ul>
+  </section>
+</div>
+
+<div class="stage" id="stage" hidden>
+  <div class="s-head">
+    <div class="line"><span class="name" id="sName"></span><span class="count" id="sCount"></span></div>
+    <div class="track"><i id="sBar"></i></div>
+  </div>
+  <div class="s-main" id="sMain"></div>
+  <div class="s-ctl">
+    <button class="ctl" id="bPrev" type="button">◀ Préc.</button>
+    <button class="ctl primary" id="bPause" type="button">Pause</button>
+    <button class="ctl" id="bNext" type="button">Suiv. ▶</button>
+    <button class="ctl" id="bQuit" type="button">Quitter</button>
+  </div>
+</div>
+
+<script>
+const DATA = {"V2":{"scanner":"sunmi","name":"Preview V2 Sunmi Blink","short":"Preview V2","result":"|TEST1400G|","kb":{"AZERTY":[{"num":"1","label":"Configuration d'usine","code":"303FFF0","cw":[105,30,100,96,19,38,38,38,16,69,106]},{"num":"2","label":"Clavier France (AZERTY)","code":"6060108","cw":[105,60,60,10,100,96,24,0,106]},{"num":"3","label":"Pas d'Entrée à la fin","code":"3030050","cw":[105,30,30,5,100,96,16,53,106]},{"num":"4","label":"Format : préfixe + données + suffixe 1","code":"20C1005","cw":[105,20,100,96,35,17,16,16,21,81,106]},{"num":"5","label":"Préfixe « | »","code":"50C0107","cw":[105,50,100,96,35,16,17,16,23,25,106]},{"num":"5.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"5.2","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"5.3","label":"Chiffre 2","code":"A2","cw":[104,96,33,18,11,106]},{"num":"5.4","label":"Chiffre 4","code":"A4","cw":[104,96,33,20,17,106]},{"num":"6","label":"Suffixe 1 « | »","code":"50C0006","cw":[105,50,100,96,35,16,16,16,22,11,106]},{"num":"6.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.2","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.3","label":"Chiffre 2","code":"A2","cw":[104,96,33,18,11,106]},{"num":"6.4","label":"Chiffre 4","code":"A4","cw":[104,96,33,20,17,106]},{"num":"Test","label":"Doit taper |TEST1400G|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}],"QWERTY":[{"num":"1","label":"Configuration d'usine","code":"303FFF0","cw":[105,30,100,96,19,38,38,38,16,69,106]},{"num":"2","label":"Clavier américain (QWERTY)","code":"6060101","cw":[105,60,60,10,100,96,17,61,106]},{"num":"3","label":"Pas d'Entrée à la fin","code":"3030050","cw":[105,30,30,5,100,96,16,53,106]},{"num":"4","label":"Format : préfixe + données + suffixe 1","code":"20C1005","cw":[105,20,100,96,35,17,16,16,21,81,106]},{"num":"5","label":"Préfixe « | »","code":"50C0107","cw":[105,50,100,96,35,16,17,16,23,25,106]},{"num":"5.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"5.2","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"5.3","label":"Chiffre 2","code":"A2","cw":[104,96,33,18,11,106]},{"num":"5.4","label":"Chiffre 4","code":"A4","cw":[104,96,33,20,17,106]},{"num":"6","label":"Suffixe 1 « | »","code":"50C0006","cw":[105,50,100,96,35,16,16,16,22,11,106]},{"num":"6.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.2","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.3","label":"Chiffre 2","code":"A2","cw":[104,96,33,18,11,106]},{"num":"6.4","label":"Chiffre 4","code":"A4","cw":[104,96,33,20,17,106]},{"num":"Test","label":"Doit taper |TEST1400G|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}]}},"V3":{"scanner":"sunmi","name":"Preview V3 Sunmi Blink","short":"Preview V3","result":"TEST1400G$|","kb":{"AZERTY":[{"num":"1","label":"Configuration d'usine","code":"303FFF0","cw":[105,30,100,96,19,38,38,38,16,69,106]},{"num":"2","label":"Clavier France (AZERTY)","code":"6060108","cw":[105,60,60,10,100,96,24,0,106]},{"num":"3","label":"Pas d'Entrée à la fin","code":"3030050","cw":[105,30,30,5,100,96,16,53,106]},{"num":"4","label":"Format : données + suffixe 1 + suffixe 2","code":"20C1003","cw":[105,20,100,96,35,17,16,16,19,65,106]},{"num":"5","label":"Suffixe 1 « $ »","code":"50C0006","cw":[105,50,100,96,35,16,16,16,22,11,106]},{"num":"5.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"5.2","label":"Chiffre 0","code":"A0","cw":[104,96,33,16,5,106]},{"num":"5.3","label":"Chiffre 3","code":"A3","cw":[104,96,33,19,14,106]},{"num":"5.4","label":"Chiffre 6","code":"A6","cw":[104,96,33,22,23,106]},{"num":"6","label":"Suffixe 2 « | »","code":"50C0208","cw":[105,50,100,96,35,16,18,16,24,39,106]},{"num":"6.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.2","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.3","label":"Chiffre 2","code":"A2","cw":[104,96,33,18,11,106]},{"num":"6.4","label":"Chiffre 4","code":"A4","cw":[104,96,33,20,17,106]},{"num":"Test","label":"Doit taper TEST1400G$|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}],"QWERTY":[{"num":"1","label":"Configuration d'usine","code":"303FFF0","cw":[105,30,100,96,19,38,38,38,16,69,106]},{"num":"2","label":"Clavier américain (QWERTY)","code":"6060101","cw":[105,60,60,10,100,96,17,61,106]},{"num":"3","label":"Pas d'Entrée à la fin","code":"3030050","cw":[105,30,30,5,100,96,16,53,106]},{"num":"4","label":"Format : données + suffixe 1 + suffixe 2","code":"20C1003","cw":[105,20,100,96,35,17,16,16,19,65,106]},{"num":"5","label":"Suffixe 1 « $ »","code":"50C0006","cw":[105,50,100,96,35,16,16,16,22,11,106]},{"num":"5.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"5.2","label":"Chiffre 0","code":"A0","cw":[104,96,33,16,5,106]},{"num":"5.3","label":"Chiffre 3","code":"A3","cw":[104,96,33,19,14,106]},{"num":"5.4","label":"Chiffre 6","code":"A6","cw":[104,96,33,22,23,106]},{"num":"6","label":"Suffixe 2 « | »","code":"50C0208","cw":[105,50,100,96,35,16,18,16,24,39,106]},{"num":"6.1","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.2","label":"Chiffre 1","code":"A1","cw":[104,96,33,17,8,106]},{"num":"6.3","label":"Chiffre 2","code":"A2","cw":[104,96,33,18,11,106]},{"num":"6.4","label":"Chiffre 4","code":"A4","cw":[104,96,33,20,17,106]},{"num":"Test","label":"Doit taper TEST1400G$|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}]}},"HP":{"scanner":"honeywell","name":"Preview V2 Honeywell Voyager 1400g","short":"Preview V2","result":"|TEST1400G|","kb":{"AZERTY":[{"num":"1","label":"Supprimer les réglages personnalisés","code":"DEFOVR.","cw":[104,94,36,37,38,47,54,50,14,96,49,106]},{"num":"2","label":"Réglages d'usine","code":"DEFALT.","cw":[104,94,36,37,38,33,44,52,14,96,36,106]},{"num":"3","label":"Clavier France (AZERTY)","code":"KBDCTY3.","cw":[104,94,43,34,36,35,52,57,19,14,96,79,106]},{"num":"4","label":"Préfixe « | » (toutes symbologies)","code":"PREBK2997C.","cw":[104,94,48,50,37,34,43,18,25,25,23,35,14,96,100,106]},{"num":"5","label":"Suffixe « | » (toutes symbologies)","code":"SUFBK2997C.","cw":[104,94,51,53,38,34,43,18,25,25,23,35,14,96,16,106]},{"num":"Test","label":"Doit taper |TEST1400G|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}],"QWERTY":[{"num":"1","label":"Supprimer les réglages personnalisés","code":"DEFOVR.","cw":[104,94,36,37,38,47,54,50,14,96,49,106]},{"num":"2","label":"Réglages d'usine","code":"DEFALT.","cw":[104,94,36,37,38,33,44,52,14,96,36,106]},{"num":"3","label":"Clavier américain (QWERTY)","code":"KBDCTY0.","cw":[104,94,43,34,36,35,52,57,16,14,96,55,106]},{"num":"4","label":"Préfixe « | » (toutes symbologies)","code":"PREBK2997C.","cw":[104,94,48,50,37,34,43,18,25,25,23,35,14,96,100,106]},{"num":"5","label":"Suffixe « | » (toutes symbologies)","code":"SUFBK2997C.","cw":[104,94,51,53,38,34,43,18,25,25,23,35,14,96,16,106]},{"num":"Test","label":"Doit taper |TEST1400G|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}]}},"HS":{"scanner":"honeywell","name":"Preview V3 Honeywell Voyager 1400g","short":"Preview V3","result":"TEST1400G$|","kb":{"AZERTY":[{"num":"1","label":"Supprimer les réglages personnalisés","code":"DEFOVR.","cw":[104,94,36,37,38,47,54,50,14,96,49,106]},{"num":"2","label":"Réglages d'usine","code":"DEFALT.","cw":[104,94,36,37,38,33,44,52,14,96,36,106]},{"num":"3","label":"Clavier France (AZERTY)","code":"KBDCTY3.","cw":[104,94,43,34,36,35,52,57,19,14,96,79,106]},{"num":"4","label":"Suffixe « $| » (toutes symbologies)","code":"SUFBK299247C.","cw":[104,94,51,53,38,34,43,18,25,25,18,20,23,35,14,96,31,106]},{"num":"Test","label":"Doit taper TEST1400G$|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}],"QWERTY":[{"num":"1","label":"Supprimer les réglages personnalisés","code":"DEFOVR.","cw":[104,94,36,37,38,47,54,50,14,96,49,106]},{"num":"2","label":"Réglages d'usine","code":"DEFALT.","cw":[104,94,36,37,38,33,44,52,14,96,36,106]},{"num":"3","label":"Clavier américain (QWERTY)","code":"KBDCTY0.","cw":[104,94,43,34,36,35,52,57,16,14,96,55,106]},{"num":"4","label":"Suffixe « $| » (toutes symbologies)","code":"SUFBK299247C.","cw":[104,94,51,53,38,34,43,18,25,25,18,20,23,35,14,96,31,106]},{"num":"Test","label":"Doit taper TEST1400G$|","code":"TEST1400G","cw":[104,52,37,51,52,17,20,16,16,39,48,106]}]}}};
+const P = "212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112".split(" ");
+
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("sbcp3:" + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem("sbcp3:" + k, JSON.stringify(v)); } catch (e) {} }
+};
+
+// ----- réglages -----
+function sel(name) { const el = document.querySelector(`input[name=${name}]:checked`); return el ? el.value : null; }
+const TIPS = {
+  sunmi: "Tenir le téléphone sous le scanner, écran face à la fenêtre de lecture, sans bouger.",
+  honeywell: "Pointer la scanette vers l'écran à 10–15 cm, un peu inclinée pour éviter le reflet, et appuyer sur la gâchette à chaque code (ou la laisser sur son socle en mode présentation)."
+};
+function renderCfgOptions(scan, want) {
+  const keys = Object.keys(DATA).filter(k => DATA[k].scanner === scan);
+  const pick = keys.includes(want) ? want : keys[0];
+  $("cfgSeg").innerHTML = keys.map(k =>
+    `<input type="radio" name="cfg" id="cfg-${k}" value="${k}"${k === pick ? " checked" : ""}><label for="cfg-${k}"><b>${esc(DATA[k].short)}</b><span>${esc(DATA[k].result)}</span></label>`
+  ).join("");
+  $("tipHold").textContent = TIPS[scan];
+}
+function restore() {
+  const s = store.get("scan", "sunmi"), c = store.get("cfg", "V2"), k = store.get("kb", "AZERTY");
+  if ($("scan-" + s)) $("scan-" + s).checked = true;
+  renderCfgOptions(sel("scan"), c);
+  if ($("kb-" + k)) $("kb-" + k).checked = true;
+  $("show").value = Math.min(2, store.get("show", 0.5));
+  $("blank").value = store.get("blank", 0.5);
+  $("auto").checked = store.get("auto", true);
+}
+function renderSetup(e) {
+  if (e && e.target && e.target.name === "scan") renderCfgOptions(sel("scan"), null);
+  const cfg = sel("cfg"), kb = sel("kb");
+  store.set("scan", sel("scan"));
+  const d = DATA[cfg], steps = d.kb[kb];
+  $("showOut").textContent = (+$("show").value).toFixed(1).replace(".", ",") + " s";
+  $("blankOut").textContent = (+$("blank").value).toFixed(1).replace(".", ",") + " s";
+  const total = steps.length * (+$("show").value + +$("blank").value) + 3;
+  $("seqMeta").textContent = `${steps.length} codes · env. ${Math.round(total)} s`;
+  $("list").innerHTML = steps.map((s, i) =>
+    `<li class="${s.num.includes(".") ? "sub" : ""}"><button type="button" data-i="${i}" aria-label="Afficher le code de l'étape ${esc(s.num)}"><span class="n">${s.num}</span><span class="t">${esc(s.label)}</span><span class="c">${esc(s.code)}</span><span class="go-ico" aria-hidden="true">▸</span></button></li>`
+  ).join("");
+  store.set("cfg", cfg); store.set("kb", kb);
+  store.set("show", +$("show").value); store.set("blank", +$("blank").value); store.set("auto", $("auto").checked);
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+$("setup").addEventListener("change", renderSetup);
+$("setup").addEventListener("input", (e) => { if (e.target.type === "range") renderSetup(e); });
+
+// ----- code-barres -----
+function drawBarcode(cws) {
+  const modules = cws.reduce((a, c) => a + [...P[c]].reduce((x, w) => x + +w, 0), 0) + 20;
+  const dpr = window.devicePixelRatio || 1;
+  const avail = Math.min(window.innerWidth - 32, 900);
+  let m = Math.max(2, Math.floor(avail * dpr / modules));
+  const wDev = modules * m;
+  const hCss = Math.min(Math.max(window.innerHeight * 0.28, 140), 340);
+  const hDev = Math.round(hCss * dpr);
+  const cv = document.createElement("canvas");
+  cv.className = "bc"; cv.width = wDev; cv.height = hDev;
+  cv.style.width = (wDev / dpr) + "px"; cv.style.height = hCss + "px";
+  const g = cv.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, wDev, hDev);
+  g.fillStyle = "#000";
+  let x = 10 * m;
+  for (const c of cws) {
+    let bar = true;
+    for (const w of P[c]) { const wd = +w * m; if (bar) g.fillRect(x, 0, wd, hDev); x += wd; bar = !bar; }
+  }
+  cv.setAttribute("role", "img");
+  return cv;
+}
+
+// ----- lecteur -----
+let S = null, timer = null, wake = null;
+function clearT() { if (timer) { clearTimeout(timer); timer = null; } }
+async function keepAwake() { try { if ("wakeLock" in navigator) wake = await navigator.wakeLock.request("screen"); } catch (e) { wake = null; } }
+function release() { try { wake && wake.release(); } catch (e) {} wake = null; }
+
+function start(at) {
+  const cfg = sel("cfg"), kb = sel("kb");
+  const single = Number.isInteger(at);
+  S = { d: DATA[cfg], kb, steps: DATA[cfg].kb[kb], i: single ? at : 0, phase: single ? "show" : "count", n: 3, paused: single,
+        show: +$("show").value * 1000, blank: +$("blank").value * 1000, auto: $("auto").checked };
+  $("setup").hidden = true; $("stage").hidden = false;
+  $("sName").textContent = `${S.d.name} · ${kb}`;
+  keepAwake();
+  try { const el = document.documentElement; el.requestFullscreen && el.requestFullscreen().catch(() => {}); } catch (e) {}
+  step();
+}
+function quit() {
+  clearT(); release(); S = null;
+  try { document.fullscreenElement && document.exitFullscreen().catch(() => {}); } catch (e) {}
+  $("stage").hidden = true; $("setup").hidden = false;
+}
+function head() {
+  const n = S.steps.length, i = Math.min(S.i + (S.phase === "show" ? 1 : 0), n);
+  $("sCount").textContent = S.phase === "count" ? `0 / ${n}` : `${Math.min(S.i + 1, n)} / ${n}`;
+  $("sBar").style.width = (100 * i / n) + "%";
+  $("bPause").textContent = S.paused ? "Reprendre" : (S.phase === "done" ? "Recommencer" : "Pause");
+}
+function render() {
+  const m = $("sMain"); m.innerHTML = ""; m.classList.toggle("tap", !S.auto && S.phase === "show");
+  const s = S.steps[S.i];
+  if (S.phase === "count") {
+    m.innerHTML = `<div class="s-next">Début dans</div><div class="s-count">${S.n}</div><div class="s-hint">Placer le téléphone sous le scanner</div>`;
+  } else if (S.phase === "blank") {
+    m.innerHTML = `<div class="s-next">Suivant<b>${esc(s.num)} · ${esc(s.label)}</b></div>`;
+  } else if (S.phase === "show") {
+    const num = document.createElement("div"); num.className = "s-num"; num.textContent = s.num;
+    const lbl = document.createElement("div"); lbl.className = "s-lbl"; lbl.textContent = s.label;
+    const cv = drawBarcode(s.cw); cv.setAttribute("aria-label", "Code-barres " + s.code);
+    const hint = document.createElement("div"); hint.className = "s-hint";
+    hint.textContent = S.paused ? "En pause · « Reprendre » continue la séquence à partir d'ici" : (S.auto ? "Attendre le bip" : "Après le bip, toucher l'écran ou « Suiv. »");
+    m.append(num, lbl, cv, hint);
+  } else {
+    m.innerHTML = `<div class="s-num">Terminé</div><div class="s-next">Le dernier code doit avoir tapé<b style="color:#0a5cad">${esc(S.d.result)}</b></div>`;
+  }
+  head();
+}
+function step() {
+  clearT(); render();
+  if (S.paused) return;
+  if (S.phase === "count") {
+    timer = setTimeout(() => { if (--S.n <= 0) { S.phase = "blank"; } step(); }, 1000);
+  } else if (S.phase === "blank") {
+    timer = setTimeout(() => { S.phase = "show"; step(); }, S.blank);
+  } else if (S.phase === "show" && S.auto) {
+    timer = setTimeout(advance, S.show);
+  }
+}
+function advance() {
+  if (S.i + 1 >= S.steps.length) { S.phase = "done"; S.i = S.steps.length - 1; step(); return; }
+  S.i++; S.phase = S.paused ? "show" : "blank"; step();
+}
+function back() {
+  S.i = Math.max(0, S.phase === "show" || S.phase === "done" ? S.i - (S.phase === "done" ? 0 : 1) : S.i - 1);
+  S.phase = S.paused ? "show" : "blank"; step();
+}
+$("start").addEventListener("click", () => start());
+$("list").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (b) start(+b.dataset.i); });
+$("bQuit").addEventListener("click", quit);
+$("bNext").addEventListener("click", () => { if (!S) return; if (S.phase === "count") { S.phase = "blank"; step(); } else if (S.phase !== "done") advance(); });
+$("bPrev").addEventListener("click", () => { if (S && S.phase !== "count") back(); });
+$("bPause").addEventListener("click", () => {
+  if (!S) return;
+  if (S.phase === "done") { S.i = 0; S.phase = "count"; S.n = 3; S.paused = false; step(); return; }
+  S.paused = !S.paused; step();
+});
+$("sMain").addEventListener("click", () => { if (S && !S.auto && S.phase === "show" && !S.paused) advance(); });
+document.addEventListener("visibilitychange", () => { if (S && document.visibilityState === "visible") keepAwake(); });
+window.addEventListener("resize", () => { if (S && S.phase === "show") render(); });
+
+restore(); renderSetup();
+</script>
+
+</body>
+</html>
